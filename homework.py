@@ -1,11 +1,29 @@
-...
+import logging
+import os
+import requests
+import time
+import telegram
+import sys
+
+from dotenv import load_dotenv
+
 
 load_dotenv()
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+handler = logging.StreamHandler(stream=sys.stdout)
+logger.addHandler(handler)
+formatter = logging.Formatter(
+    '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+handler.setFormatter(formatter)
 
-PRACTICUM_TOKEN = ...
-TELEGRAM_TOKEN = ...
-TELEGRAM_CHAT_ID = ...
+
+PRACTICUM_TOKEN = os.getenv('PRACTICUM_TOKEN')
+TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
+TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
+
 
 RETRY_PERIOD = 600
 ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
@@ -20,46 +38,73 @@ HOMEWORK_VERDICTS = {
 
 
 def check_tokens():
-    ...
+    """Проверка наличия необходимых токенов."""
+    if not(PRACTICUM_TOKEN and TELEGRAM_TOKEN and TELEGRAM_CHAT_ID):
+        logger.critical(
+            'Отсутствие переменных окружения во время запуска бота'
+        )
+        raise SystemExit('Not specified tokens')
 
 
 def send_message(bot, message):
-    ...
+    """Отправка сообщения."""
+    try:
+        bot.send_message(TELEGRAM_CHAT_ID, message)
+    except Exception as error:
+        logger.error(f'Сбой в отправке сообщения - {error}')
+    logger.debug(f'Сообщение: {message} - успешно отправлено!')
 
 
 def get_api_answer(timestamp):
-    ...
+    """Получение ответа api."""
+    payload = {'from_date': timestamp}
+    try:
+        homework_statuses = requests.get(
+            ENDPOINT, headers=HEADERS, params=payload
+        )
+    except Exception as error:
+        logger.error(f'Ошибка запроса к эндпоинту - {error}')
+    return homework_statuses.json()
 
 
 def check_response(response):
-    ...
+    """Проверка новых статусов."""
+    if response.get('homeworks') == []:
+        logger.debug('Новые статусы отутствуют!')
+        return False
+    return True
 
 
 def parse_status(homework):
-    ...
-
+    """Парсинг ответа api."""
+    try:
+        verdict = HOMEWORK_VERDICTS[homework.get('status')]
+        homework_name = [homework.get('homework_name')]
+    except Exception as error:
+        logger.error(f'Ошибка запроса к эндпоинту - {error}')
     return f'Изменился статус проверки работы "{homework_name}". {verdict}'
 
 
 def main():
     """Основная логика работы бота."""
-
-    ...
+    check_tokens()
 
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     timestamp = int(time.time())
 
-    ...
-
     while True:
         try:
-
-            ...
+            response = get_api_answer(timestamp)
+            timestamp = response.get('current_date')
+            if check_response(response):
+                homework = response.get('homeworks')[0]
+                send_message(bot, parse_status(homework))
 
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
-            ...
-        ...
+            send_message(bot, message)
+            logger.error(f'Ошибка работы - {error}')
+        time.sleep(RETRY_PERIOD)
 
 
 if __name__ == '__main__':
