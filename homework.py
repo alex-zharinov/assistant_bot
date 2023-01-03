@@ -58,17 +58,31 @@ def send_message(bot, message):
 def get_api_answer(timestamp):
     """Получение ответа api."""
     payload = {'from_date': timestamp}
+
     try:
         homework_statuses = requests.get(
             ENDPOINT, headers=HEADERS, params=payload
         )
+        homework_statuses.raise_for_status()
+    except requests.RequestException:
+        message = f'Код ответа API: {homework_statuses.status_code}'
+        logger.error(message)
+        raise requests.RequestException(message)
     except Exception as error:
         logger.error(f'Ошибка запроса к эндпоинту - {error}')
+    if requests.get(
+        ENDPOINT, headers=HEADERS, params=payload
+    ).status_code != 200:
+        raise('Сервер API недоступен!')
     return homework_statuses.json()
 
 
 def check_response(response):
     """Проверка новых статусов."""
+    if type(response) != dict:
+        raise TypeError()
+    if type(response.get('homeworks')) != list:
+        raise TypeError()
     if response.get('homeworks') == []:
         logger.debug('Новые статусы отутствуют!')
         return False
@@ -77,9 +91,11 @@ def check_response(response):
 
 def parse_status(homework):
     """Парсинг ответа api."""
+    if 'homework_name' not in homework:
+        raise KeyError()
     try:
         verdict = HOMEWORK_VERDICTS[homework.get('status')]
-        homework_name = [homework.get('homework_name')]
+        homework_name = homework['homework_name']
     except Exception as error:
         logger.error(f'Ошибка запроса к эндпоинту - {error}')
     return f'Изменился статус проверки работы "{homework_name}". {verdict}'
