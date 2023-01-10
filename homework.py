@@ -6,6 +6,7 @@ import telegram
 import sys
 
 from dotenv import load_dotenv
+from http import HTTPStatus
 
 
 load_dotenv()
@@ -19,16 +20,13 @@ formatter = logging.Formatter(
 )
 handler.setFormatter(formatter)
 
-
 PRACTICUM_TOKEN = os.getenv('PRACTICUM_TOKEN')
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 
-
 RETRY_PERIOD = 600
 ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
 HEADERS = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
-
 
 HOMEWORK_VERDICTS = {
     'approved': 'Работа проверена: ревьюеру всё понравилось. Ура!',
@@ -46,9 +44,10 @@ def send_message(bot, message):
     """Отправка сообщения."""
     try:
         bot.send_message(TELEGRAM_CHAT_ID, message)
+        logger.debug(f'Сообщение: {message} - успешно отправлено!')
     except Exception as error:
         logger.error(f'Сбой в отправке сообщения - {error}')
-    logger.debug(f'Сообщение: {message} - успешно отправлено!')
+        raise Exception(f'Сбой в отправке сообщения - {error}')
 
 
 def get_api_answer(timestamp):
@@ -56,24 +55,22 @@ def get_api_answer(timestamp):
     get_api_dict = {
         'url': ENDPOINT,
         'headers': HEADERS,
-        'payload': {'from_date': timestamp},
+        'params': {'from_date': timestamp},
     }
 
     try:
-        homework_statuses = requests.get(
-            get_api_dict['url'],
-            headers=get_api_dict['headers'],
-            params=get_api_dict['payload'],
-        )
+        homework_statuses = requests.get(**get_api_dict)
         homework_statuses.raise_for_status()
     except requests.RequestException:
         message = f'Код ответа API: {homework_statuses.status_code}'
         raise requests.RequestException(message)
     except Exception as error:
         logger.error(f'Ошибка запроса к эндпоинту - {error}')
-    if homework_statuses.status_code != 200:
-        raise('homework_statuses.status_code != 200')
-    return homework_statuses.json()
+        raise Exception(error)
+    finally:
+        if homework_statuses.status_code != HTTPStatus.OK:
+            raise(f'Код ответа API: {homework_statuses.status_code}')
+        return homework_statuses.json()
 
 
 def check_response(response):
@@ -82,7 +79,7 @@ def check_response(response):
         raise TypeError('type(response) != dict')
     if type(response.get('homeworks')) != list:
         raise TypeError('type(response.get("homeworks")) != list')
-    return response.get('homeworks')[0]
+    return response.get('homeworks')
 
 
 def parse_status(homework):
@@ -106,6 +103,7 @@ def main():
         )
         raise SystemExit('Not specified tokens')
 
+    message = ''
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     timestamp = int(time.time())
 
@@ -115,10 +113,12 @@ def main():
             timestamp = response.get('current_date')
             homework = check_response(response)
             if homework == []:
-                send_message(bot, 'Новые статусы отутствуют!')
+                new_message = 'Новые статусы отутствуют!'
             else:
-                send_message(bot, parse_status(homework))
-
+                new_message = parse_status(homework[0])
+            if new_message != message:
+                send_message(bot, new_message)
+                message = new_message
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
             send_message(bot, message)
