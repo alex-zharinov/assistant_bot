@@ -7,6 +7,7 @@ import sys
 
 from dotenv import load_dotenv
 from http import HTTPStatus
+from exceptions import BadHTTPStatus
 
 
 load_dotenv()
@@ -57,20 +58,16 @@ def get_api_answer(timestamp):
         'headers': HEADERS,
         'params': {'from_date': timestamp},
     }
-
     try:
         homework_statuses = requests.get(**get_api_dict)
+    except requests.RequestException as error:
         homework_statuses.raise_for_status()
-    except requests.RequestException:
-        message = f'Код ответа API: {homework_statuses.status_code}'
-        raise requests.RequestException(message)
+        raise requests.RequestException(error)
     except Exception as error:
-        logger.error(f'Ошибка запроса к эндпоинту - {error}')
         raise Exception(error)
-    finally:
-        if homework_statuses.status_code != HTTPStatus.OK:
-            raise(f'Код ответа API: {homework_statuses.status_code}')
-        return homework_statuses.json()
+    if homework_statuses.status_code != HTTPStatus.OK:
+        raise BadHTTPStatus('Код ответа API "not OK"')
+    return homework_statuses.json()
 
 
 def check_response(response):
@@ -90,7 +87,6 @@ def parse_status(homework):
         verdict = HOMEWORK_VERDICTS[homework.get('status')]
         homework_name = homework['homework_name']
     except Exception as error:
-        logger.error(f'Ошибка запроса к эндпоинту - {error}')
         raise Exception(error)
     return f'Изменился статус проверки работы "{homework_name}". {verdict}'
 
@@ -116,14 +112,14 @@ def main():
                 new_message = 'Новые статусы отутствуют!'
             else:
                 new_message = parse_status(homework[0])
+        except Exception as error:
+            logger.error(error)
+            new_message = f'Сбой в работе программы: {error}'
+            send_message(bot, message)
+        finally:
             if new_message != message:
                 send_message(bot, new_message)
                 message = new_message
-        except Exception as error:
-            message = f'Сбой в работе программы: {error}'
-            send_message(bot, message)
-            logger.error(f'Ошибка работы - {error}')
-        finally:
             time.sleep(RETRY_PERIOD)
 
 
