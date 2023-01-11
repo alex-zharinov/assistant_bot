@@ -59,15 +59,15 @@ def get_api_answer(timestamp):
         'params': {'from_date': timestamp},
     }
     try:
-        homework_statuses = requests.get(**get_api_dict)
-    except requests.RequestException as error:
-        homework_statuses.raise_for_status()
-        raise requests.RequestException(error)
-    except Exception as error:
-        raise Exception(error)
-    if homework_statuses.status_code != HTTPStatus.OK:
-        raise BadHTTPStatus('Код ответа API "not OK"')
-    return homework_statuses.json()
+        response = requests.get(**get_api_dict)
+        if response.status_code != HTTPStatus.OK:
+            raise BadHTTPStatus('Код ответа API "not OK"')
+    except requests.RequestException as exc:
+        response.raise_for_status()
+        raise requests.RequestException(exc)
+    except Exception as exc:
+        raise Exception(f'Ошибка при подключении к эндойнту: {exc}')
+    return response.json()
 
 
 def check_response(response):
