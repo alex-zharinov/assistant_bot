@@ -61,7 +61,10 @@ def get_api_answer(timestamp):
     try:
         response = requests.get(**get_api_dict)
         if response.status_code != HTTPStatus.OK:
-            raise BadHTTPStatus('Код ответа API "not OK"')
+            raise BadHTTPStatus(
+                f'Нет доступа к API по адресу {response.url}.'
+                f'Код HTTP ответа сервера: {response.status_code}.'
+            )
     except requests.RequestException as exc:
         response.raise_for_status()
         raise requests.RequestException(exc)
@@ -118,7 +121,11 @@ def main():
             send_message(bot, message)
         finally:
             if new_message != message:
-                send_message(bot, new_message)
+                try:
+                    send_message(bot, new_message)
+                except Exception as error:
+                    logger.error(f'Ошибка отправки сообщения - {error}')
+                    raise Exception(f'Ошибка отправки сообщения - {error}')
                 message = new_message
             time.sleep(RETRY_PERIOD)
 
