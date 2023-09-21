@@ -3,7 +3,7 @@
 [![homework-bot workflow](https://github.com/alex-zharinov/homework_bot/actions/workflows/main.yml/badge.svg)](https://github.com/alex-zharinov/homework_bot/actions/workflows/main.yml)
 
 ## Telegram-бот для проверки домашки
-> Telegram-бот, который обращаться к API сервиса Практикум.Домашка и узнаваёт статус домашней работы: взята ли домашка в ревью, проверена ли она, а если проверена — то принял её ревьюер или вернул на доработку.
+> Telegram-бот, который обращается к API сервиса Практикум.Домашка и узнаёт статус домашней работы: взята ли домашка в ревью, проверена ли она, а если проверена — то принял её ревьюер или вернул на доработку.
 
 ## Технологии проекта:
 - Python — высокоуровневый язык программирования;
@@ -38,7 +38,7 @@ python3 -m pip install --upgrade pip
 ```
 pip install -r requirements.txt
 ```
-Запустить проект:
+Запустить бота:
 ```
 python3 homework.py 
 ```
