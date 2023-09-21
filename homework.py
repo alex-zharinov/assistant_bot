@@ -1,14 +1,14 @@
 import logging
 import os
-import requests
-import time
-import telegram
 import sys
-
-from dotenv import load_dotenv
+import time
 from http import HTTPStatus
-from exceptions import BadHTTPStatus
 
+import requests
+import telegram
+from dotenv import load_dotenv
+
+from exceptions import BadHTTPStatus
 
 load_dotenv()
 
