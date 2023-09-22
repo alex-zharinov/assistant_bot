@@ -1,4 +1,4 @@
-name: homework-bot workflow
+name: assistant-bot workflow
 
 on: [push]
 
