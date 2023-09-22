@@ -1,23 +1,22 @@
-# Homework Bot
+# Assistant Bot
 
-[![homework-bot workflow](https://github.com/alex-zharinov/homework_bot/actions/workflows/main.yml/badge.svg)](https://github.com/alex-zharinov/homework_bot/actions/workflows/main.yml)
+[![assistant-bot workflow](https://github.com/alex-zharinov/assistant_bot/actions/workflows/main.yml/badge.svg)](https://github.com/alex-zharinov/assistant_bot/actions/workflows/main.yml)
 
-## Telegram-бот для проверки домашки
-> Telegram-бот, который обращается к API сервиса Практикум.Домашка и узнаёт статус домашней работы: взята ли домашка в ревью, проверена ли она, а если проверена — то принял её ревьюер или вернул на доработку.
+## Telegram-бот для проверки статуса
+> Telegram-бот, который обращается к API сервиса и узнаёт статус работы.
 
 ## Технологии проекта:
 - Python — высокоуровневый язык программирования;
 - Telegram Client API — это интерфейс программирования приложений;
 - Telegram Bot API — интерфейс к ядру мессенджера, предназначенный для создания ботов;
-- API Практикум.Домашка — API, через который можно отслеживать статуса домашней работы.
 
 ### Как запустить проект:
 Клонировать репозиторий и перейти в него в командной строке:
 ```
-git clone https://github.com/alex-zharinov/homework_bot.git
+git clone https://github.com/alex-zharinov/assistant_bot.git
 ```
 ```
-cd homework_bot
+cd assistant_bot
 ```
 Cоздать и активировать виртуальное окружение:
 ```
@@ -44,7 +43,7 @@ python3 homework.py
 ```
 
 ## Что делает бот:
-- раз в 10 минут опрашивает API сервиса Практикум.Домашка и проверяет статус отправленной на ревью домашней работы;
+- раз в 10 минут опрашивает API сервиса и проверяет статус работы;
 - при обновлении статуса анализирует ответ API и отправляет соответствующее уведомление в Telegram;
 - логирует свою работу и сообщает о важных проблемах сообщением в Telegram.
 
